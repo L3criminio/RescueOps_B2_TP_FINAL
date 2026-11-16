@@ -6,19 +6,21 @@ Date : 09/11/2026
 Audit et corrections : 16/11/2026
 Commit de base : 5e99359aa7cb8ad6a79a67a02373300e8b5a6873
 
+S0 = code de départ, avant les corrections.
+
 | ID | Règle RO | Fichier / fonction | Entrée, obtenu S0, attendu | Risque concret | Priorité P0/P1/P2 | Preuve du correctif (test / commit) |
 |---|---|---|---|---|---|---|
-| A-01 | RO-02 | `src/energy.js`, `estimateEnergy` | (0, 2) -> 11 ; (5, -1) -> 22. Attendu : `RangeError`. | Coût calculé sur des entrées invalides. | P1 : validation métier absente. | Corrigé : 2 conditions -> `energy.test.js`, valeurs invalides et bornes ; `82bdb58`. |
-| A-02 | RO-03/05 | `src/dispatch.js`, `deployDrone` | Drone `busy` ou mission `en_route` -> départ accepté en S0. Attendu : `Error`, entrées intactes. | Drone affecté deux fois ou mission redéployée. | P0 : affectation incompatible avec la sûreté de la simulation. | Corrigé : exiger `available` et `planned` -> `dispatch.test.js`, refus et nouveaux objets ; `42c12b9`. |
-| A-03 | RO-04 | `src/dispatch.js`, `deployDrone` | Coût 31, batterie 35 -> départ avec 4 points ; batterie 50 -> 19 points. Attendu : `RangeError` ; 51 -> accepté. | Départ sans la réserve minimale de 20 points. | P0 : réserve de sûreté non respectée. | Corrigé : vérifier la réserve -> `dispatch.test.js`, batteries 0/30/35/50 refusées, 51 acceptée ; `09183b8`. |
-| A-04 | RO-03/06 | `src/mission.js`, `advanceMission` | `planned -> en_route` sans drone, ou `en_route -> closed` -> acceptés en S0. Attendu : `Error`, source intacte. | Déploiement contourné et historique incohérent. | P0 : mission lancée sans contrôle du drone ni de sa batterie. | Corrigé : tableau des 3 étapes autorisées -> `mission.test.js`, 6 statuts et refus sans mutation ; `554a9d3`. |
-| A-05 | RO-07 | `src/mission.js`, `cancelMission` | `en_route -> canceled` accepté en S0. Attendu : `Error` ; annulation seulement depuis `planned`. | Mission annulée alors que le drone est parti. | P1 : annulation contraire au contrat. | Corrigé : limiter à `planned` -> `mission.test.js`, 5 refus et annulation sans mutation ; `2638f17`. |
-| A-06 | RO-08 | `src/public.js`, `getPublicStatus` | Suivi SOS-204 -> e-mail, GPS et priorité visibles ; historique partagé avec la source. Attendu : exactement `id`, `status`, copie de `history`. | Données privées publiques et historique modifiable depuis la vue. | P0 : données personnelles exposées selon la grille du TP. | Corrigé : retirer les champs privés et copier l'historique -> `public.test.js`, champs exacts et copie indépendante ; `960b25f`. |
-| A-07 | RO-09 | `src/php/MissionCard.php`, `publicCard` | Mission SOS-204 -> carte avec `contactEmail` et `gps`. Attendu : exactement `id`, `statusLabel`. | Contact et coordonnées visibles publiquement. | P0 : données personnelles exposées selon la grille du TP. | Corrigé : retirer contact et GPS -> `MissionCard.test.php`, champs exacts, 6 libellés, entrée intacte ; `b5e85fb`. |
+| A-01 | RO-02 | `src/energy.js`, `estimateEnergy` | Distance 0, charge 2 -> 11 ; distance 5, charge -1 -> 22. Attendu : `RangeError`. | Calcul avec des valeurs interdites. | P1 : distance et charge non vérifiées. | 2 conditions ajoutées -> `energy.test.js`, valeurs interdites et limites 0/5 kg ; `82bdb58`. |
+| A-02 | RO-03/05 | `src/dispatch.js`, `deployDrone` | Drone `busy` ou mission `en_route` -> départ accepté. Attendu : `Error`, objets inchangés. | Un drone occupé peut repartir. | P0 : départ dangereux dans la simulation. | Vérifier `available` et `planned` -> `dispatch.test.js`, refus et nouveaux objets ; `42c12b9`. |
+| A-03 | RO-04 | `src/dispatch.js`, `deployDrone` | Coût 31 : batterie 35 -> reste 4 ; batterie 50 -> reste 19. Attendu : `RangeError` ; 51 doit passer. | Pas assez de batterie en réserve. | P0 : réserve obligatoire de 20 non respectée. | Vérifier la réserve -> `dispatch.test.js`, 0/30/35/50 refusés, 51 accepté ; `09183b8`. |
+| A-04 | RO-03/06 | `src/mission.js`, `advanceMission` | `planned -> en_route` sans drone et `en_route -> closed` acceptés. Attendu : `Error`, mission inchangée. | Mission lancée sans drone ou étapes sautées. | P0 : départ sans vérifier le drone ni la batterie. | Autoriser seulement les 3 étapes prévues -> `mission.test.js`, essais depuis les 6 statuts ; `554a9d3`. |
+| A-05 | RO-07 | `src/mission.js`, `cancelMission` | `en_route -> canceled` accepté. Attendu : `Error` ; annulation seulement depuis `planned`. | Mission annulée après le départ. | P1 : règle d'annulation non respectée. | Vérifier `planned` -> `mission.test.js`, 5 refus et annulation avec historique, sans changer l'original ; `2638f17`. |
+| A-06 | RO-08 | `src/public.js`, `getPublicStatus` | SOS-204 -> e-mail, GPS et priorité visibles ; modifier l'historique public modifie aussi la mission. Attendu : `id`, `status`, copie de `history`. | Données privées visibles et mission modifiable depuis le suivi. | P0 : données personnelles publiques, selon le barème. | Retirer les champs privés et copier l'historique -> `public.test.js`, champs exacts et copie séparée ; `960b25f`. |
+| A-07 | RO-09 | `src/php/MissionCard.php`, `publicCard` | SOS-204 -> carte avec `contactEmail` et `gps`. Attendu : seulement `id`, `statusLabel`. | E-mail et GPS visibles publiquement. | P0 : données personnelles publiques, selon le barème. | Retirer contact et GPS -> `MissionCard.test.php`, champs exacts, 6 libellés et mission inchangée ; `b5e85fb`. |
 
 ## D-01 — Dette technique reportable
 
-Absence de CI GitHub -> un push peut oublier les tests. P2, reportée pour garder le TP centré sur les défauts métier. Mesure : exécuter JS, PHP, syntaxe et diff avant chaque livraison. Responsable : auteur ; réévaluer avant une prochaine livraison ou un travail en équipe. Aucun défaut P0 n'est différé.
+Pas de tests automatiques sur GitHub (CI) -> risque de pousser du code sans le tester. P2 : mise en place reportée pour corriger d'abord les bugs du TP. En attendant, lancer les tests JS/PHP et vérifier la syntaxe et le diff avant chaque livraison. Responsable : Grégory Compastié ; à revoir avant la prochaine livraison ou un travail en équipe. Aucun P0 n'est laissé de côté.
 
 ## Contrôles AVANT correction
 
@@ -26,9 +28,9 @@ Absence de CI GitHub -> un push peut oublier les tests. P2, reportée pour garde
 - `php tests/MissionCard.test.php` -> 3 vérifications conformes.
 - `php -l src/php/MissionCard.php` -> syntaxe valide.
 - `npm.cmd run demo` -> coût 31, batterie 39 ; e-mail et GPS publics ; départ à 35 accepté avec 4 points restants.
-- Les tests initiaux couvrent surtout les cas autorisés, pas l'ensemble du contrat.
+- Les tests de départ vérifient surtout les cas qui fonctionnent, pas tous les cas interdits.
 
-Tests ajoutés puis exécutés avant chaque fix :
+Tests ajoutés et lancés avant chaque correction :
 
 | Commande ciblée | Échecs observés avant le fix |
 |---|---|
@@ -40,7 +42,7 @@ Tests ajoutés puis exécutés avant chaque fix :
 | `node --test tests/public.test.js` | 2 : champs privés présents et historique partagé. |
 | `php tests/MissionCard.test.php` | Arrêt sur P04 : contact et GPS encore présents. |
 
-Les cas regroupés dans une boucle s'arrêtent au premier échec ; ils sont tous parcourus après correction.
+Dans une boucle, un test s'arrête au premier échec. Après correction, toutes les valeurs sont testées.
 
 ## Contrôles APRÈS correction
 
@@ -50,9 +52,9 @@ Les cas regroupés dans une boucle s'arrêtent au premier échec ; ils sont tous
 - `npm.cmd run demo` -> coût 31, batterie 39, suivi sans données privées ; départ à 35 refusé.
 - `git diff --check` et `git diff 5e99359 --check` -> aucune erreur.
 - RO-01 et les libellés PHP conservés ; règles métier non modifiées.
-- Auto-revue -> 2 tests d'intégration ajoutés : énergie invalide au déploiement et suivi public après départ.
-- Limites : tests locaux, pas de CI ni de revue par un pair. Les créateurs reçoivent des entrées bien formées selon le contrat.
+- Auto-revue avec l'aide d'une IA -> 2 tests ajoutés : départ avec une distance ou une charge interdite, et suivi public après départ.
+- Limites : tests lancés sur le PC, sans tests automatiques sur GitHub ni relecture par un autre élève. Le TP suppose que les données de `createMission` et `createDrone` sont correctes.
 
 ## Conclusion d'audit
 
-A-01 à A-07 corrigés et testés. Aucun P0 différé ; D-01 reste en P2. Les tests initiaux passent toujours. Voir `PR_DESCRIPTION.md` et `REVUE.md` pour la livraison et l'auto-revue.
+A-01 à A-07 corrigés et testés. Aucun P0 laissé de côté ; D-01 reste en P2. Les anciens tests passent toujours. Le résumé de la PR et l'auto-revue sont dans `PR_DESCRIPTION.md` et `REVUE.md`.
