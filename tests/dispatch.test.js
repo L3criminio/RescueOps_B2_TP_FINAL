@@ -53,3 +53,21 @@ test('RO-05 - nouveaux objets et drone affecté après départ', () => {
   result.mission.history.push('on_site');
   assert.deepEqual(m.history, ['planned']);
 });
+
+test('RO-04 - réserve insuffisante refusée sans mutation', () => {
+  for (const battery of [0, 30, 35, 50]) {
+    const d = drone(battery);
+    const m = mission();
+    const before = structuredClone({ d, m });
+    assert.throws(() => deployDrone(d, m), RangeError);
+    assert.deepEqual({ d, m }, before);
+  }
+});
+
+test('RO-04 - réserve de 20 points exactement acceptée', () => {
+  const result = deployDrone(drone(51), mission());
+  assert.equal(result.energyUsed, 31);
+  assert.equal(result.drone.batteryPoints, 20);
+  assert.equal(result.drone.status, 'busy');
+  assert.equal(result.mission.status, 'en_route');
+});

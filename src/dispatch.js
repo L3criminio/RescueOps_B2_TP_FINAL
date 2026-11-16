@@ -9,6 +9,9 @@ export function deployDrone(drone, mission) {
     throw new Error('Le drone doit être disponible et la mission planifiée');
   }
   const energyUsed = estimateEnergy(mission.distanceKm, mission.payloadKg);
+  if (drone.batteryPoints - energyUsed < 20) {
+    throw new RangeError('Le drone doit garder au moins 20 points de batterie');
+  }
   return {
     drone: {
       ...drone,
