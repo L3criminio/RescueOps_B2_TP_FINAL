@@ -71,3 +71,13 @@ test('RO-04 - réserve de 20 points exactement acceptée', () => {
   assert.equal(result.drone.status, 'busy');
   assert.equal(result.mission.status, 'en_route');
 });
+
+test('Revue R-01 - énergie invalide refuse le départ sans mutation', () => {
+  for (const values of [{ distanceKm: 0 }, { payloadKg: 6 }]) {
+    const d = drone();
+    const m = { ...mission(), ...values };
+    const before = structuredClone({ d, m });
+    assert.throws(() => deployDrone(d, m), RangeError);
+    assert.deepEqual({ d, m }, before);
+  }
+});

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { getPublicStatus } from '../src/public.js';
-import { mission } from './helpers.js';
+import { mission, drone } from './helpers.js';
+import { deployDrone } from '../src/dispatch.js';
 
 test('T08 - le suivi public affiche la référence et le statut', () => {
   const summary = getPublicStatus(mission());
@@ -27,4 +28,15 @@ test('RO-08 - historique public indépendant', () => {
   assert.notStrictEqual(summary.history, original.history);
   summary.history.push('en_route');
   assert.deepEqual(original, before);
+});
+
+test('Revue R-02 - suivi public après un vrai déploiement', () => {
+  const deployed = deployDrone(drone(), mission()).mission;
+  const before = structuredClone(deployed);
+  assert.deepEqual(getPublicStatus(deployed), {
+    id: 'SOS-204',
+    status: 'en_route',
+    history: ['planned', 'en_route'],
+  });
+  assert.deepEqual(deployed, before);
 });
