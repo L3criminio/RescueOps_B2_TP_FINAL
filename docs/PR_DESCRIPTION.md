@@ -62,4 +62,4 @@ Auto-revue assistée, identifiée dans `REVUE.md` -> 2 tests ajoutés (`27a617a`
 URL réelle : https://github.com/jcrangon/RescueOps_B2_TP_FINAL/pull/1
 Branche source dans mon fork : `L3criminio:TP_RescueOps_Gregory_Compastie`
 Branche cible dans le dépôt du formateur : `jcrangon/RescueOps_B2_TP_FINAL:main`
-Statut final de la PR : brouillon à ce stade ; passage en Ready for review après publication des contrôles. Ne pas fusionner.
+Statut final de la PR : Ready for review, ouverte et non fusionnée.
