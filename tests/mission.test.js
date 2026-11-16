@@ -26,3 +26,32 @@ test('T07 - annulation planifiée conserve la source', () => {
   assert.deepEqual(canceled.history, ['planned', 'canceled']);
   assert.equal(original.status, 'planned');
 });
+
+const statuses = ['planned', 'en_route', 'on_site', 'returning', 'closed', 'canceled'];
+const allowedNext = { en_route: 'on_site', on_site: 'returning', returning: 'closed' };
+
+for (const status of statuses) {
+  test(`RO-06 - transitions interdites depuis ${status}, sans mutation`, () => {
+    const original = { ...mission(), status, history: [status] };
+    const before = structuredClone(original);
+    for (const target of [...statuses, 'unknown']) {
+      if (target === allowedNext[status]) continue;
+      assert.throws(() => advanceMission(original, target), Error);
+      assert.deepEqual(original, before);
+    }
+  });
+}
+
+test('RO-06 - étapes autorisées créent de nouveaux objets', () => {
+  let original = deployDrone(drone(), mission()).mission;
+  for (const target of ['on_site', 'returning', 'closed']) {
+    const before = structuredClone(original);
+    const result = advanceMission(original, target);
+    assert.notStrictEqual(result, original);
+    assert.notStrictEqual(result.history, original.history);
+    assert.equal(result.status, target);
+    assert.deepEqual(result.history, [...before.history, target]);
+    assert.deepEqual(original, before);
+    original = result;
+  }
+});
