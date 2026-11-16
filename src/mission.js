@@ -29,7 +29,7 @@ export function advanceMission(mission, nextStatus) {
 }
 
 export function cancelMission(mission) {
-  if (mission.status === 'closed' || mission.status === 'canceled') {
+  if (mission.status !== 'planned') {
     throw new Error('Mission cancellation not allowed');
   }
   return {

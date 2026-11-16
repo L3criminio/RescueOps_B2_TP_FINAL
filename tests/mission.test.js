@@ -55,3 +55,23 @@ test('RO-06 - étapes autorisées créent de nouveaux objets', () => {
     original = result;
   }
 });
+
+for (const status of statuses.filter(status => status !== 'planned')) {
+  test(`RO-07 - annulation refusée depuis ${status}, sans mutation`, () => {
+    const original = { ...mission(), status, history: [status] };
+    const before = structuredClone(original);
+    assert.throws(() => cancelMission(original), Error);
+    assert.deepEqual(original, before);
+  });
+}
+
+test('RO-07 - annulation planifiée crée un objet et un historique indépendants', () => {
+  const original = mission();
+  const before = structuredClone(original);
+  const result = cancelMission(original);
+  assert.notStrictEqual(result, original);
+  assert.notStrictEqual(result.history, original.history);
+  assert.equal(result.status, 'canceled');
+  assert.deepEqual(result.history, ['planned', 'canceled']);
+  assert.deepEqual(original, before);
+});
