@@ -5,6 +5,9 @@ export function createDrone(id, batteryPoints, status = 'available') {
 }
 
 export function deployDrone(drone, mission) {
+  if (drone.status !== 'available' || mission.status !== 'planned') {
+    throw new Error('Le drone doit être disponible et la mission planifiée');
+  }
   const energyUsed = estimateEnergy(mission.distanceKm, mission.payloadKg);
   return {
     drone: {

@@ -21,3 +21,35 @@ test('T04 - départ réussi ne mute pas les entrées', () => {
   assert.deepEqual(originalMission, mBefore);
   assert.deepEqual(originalDrone, dBefore);
 });
+
+test('RO-03 - drone indisponible refusé sans mutation', () => {
+  for (const status of ['busy', 'charging', 'unknown']) {
+    const d = drone(70, status);
+    const m = mission();
+    const before = structuredClone({ d, m });
+    assert.throws(() => deployDrone(d, m), Error);
+    assert.deepEqual({ d, m }, before);
+  }
+});
+
+test('RO-03 - mission non planifiée refusée sans mutation', () => {
+  for (const status of ['en_route', 'on_site', 'returning', 'closed', 'canceled', 'unknown']) {
+    const d = drone();
+    const m = { ...mission(), status };
+    const before = structuredClone({ d, m });
+    assert.throws(() => deployDrone(d, m), Error);
+    assert.deepEqual({ d, m }, before);
+  }
+});
+
+test('RO-05 - nouveaux objets et drone affecté après départ', () => {
+  const d = drone();
+  const m = mission();
+  const result = deployDrone(d, m);
+  assert.notStrictEqual(result.drone, d);
+  assert.notStrictEqual(result.mission, m);
+  assert.notStrictEqual(result.mission.history, m.history);
+  assert.equal(result.mission.droneId, d.id);
+  result.mission.history.push('on_site');
+  assert.deepEqual(m.history, ['planned']);
+});
